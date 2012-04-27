@@ -1,0 +1,100 @@
+The program is nothing more than an exercise to use STL, BOOST and template specialization. 
+Since I always find it easier to understand how the libraries must be used when solving 
+an actual problem, rather than writing another contrived program that prints "Hello World", 
+I decided to write one that solves Sudoku puzzles. 
+
+An excellent resource that describes the rules to solve the puzzle as well as a very 
+efficient algorithm for solving it (together with a Python implementation) can be found
+at:
+
+http://norvig.com/sudoku.html
+
+The algorithm I use here is not nearly as efficient as the one described at the URL above, 
+but efficiency is not the issue here. 
+
+Using template specialization we can solve puzzles using both numbers (1-9) and letters (A-I).
+
+To mark an empty cell we use 0 in the numbers case, and an underscore "_" for the letters case.  
+
+The example I use is the same in both cases, with the starting configuration:
+
+000000907
+000420180
+000705026
+100904000
+050000040
+000507009
+920108000
+034059000
+507000000
+========
+
+or 
+
+______I_G
+___DB_AH_
+___G_E_BF
+A__I_D___
+_E_____D_
+___E_G__I
+IB_A_H___
+_CD_EI___
+E_G______
+========
+
+The algorithm works as follows:
+
+1) For each empty square, calculate the set of values allowed to fill that square.
+2) If there is only one value, fill the square.
+3) Update the allowed values sets for all squares and repeat the process. Some puzzles 
+can be solved entirely this way.
+
+ If we are left only with squares with multiple values allowed, we use backtracking 
+and constraint propagation as described in http://norvig.com/sudoku.html.
+
+4) Find the row with the smallest number of empty squares (or the first one of them if 
+there are multiple rows with the same number of empty squares).
+5) Generate all combinations of allowed values to fill each square. This is basically the 
+Cartesian product of the sets of allowed values for each square. During this process
+eliminate all combinations containing repeated values as they are not allowed by the 
+Sudoku rules.
+6) Update the set of allowed values for each square in the grid. 
+7) Check if there are any squares with only one allowed value, and fill them.
+8)If we reached a dead  end, backtrack and revert the changes. 
+
+Repeat this process until all rows are filled. 
+
+The source code implements two (template) classes, Node and Table, where the template
+parameter can be either unsigned int or std::string.
+The main elements used are shared_ptr and lexical_cast from BOOST and 
+std::set and std::vector from STL.
+For example the class Table contains a two-dimensional array of Nodes implemented 
+as boost::shared_ptr<std::vector< std::vector<Node<T> > > >. To determine that a 
+particular combination of values contains any repeated values we fill a set and 
+a vector with the same values and we check that they have the same length. 
+
+The source must be compiled with the option -std=gnu++0x needed for the initialization of static class members
+Under Cygwin, with g++ version 4.5.3, this works
+
+g++ -std=gnu++0x -o NumberOrLetterSudokuSolver NumberOrLetterSudokuSolver.cpp -I/cygdrive/c/cygwin/usr/include/boost
+
+Under SUSE Linux 11.4, with g++ 4.5.1 this works:
+
+g++ -std=gnu++0x -o NumberOrLetterSudokuSolver NumberOrLetterSudokuSolver.cpp -I/usr/local/include/boost_1_46_1/boost/
+
+Please change the include path to the one corresponding to your machine. 
+
+Then run the resulting binary giving as a parameter the file containing the initial configuration of the puzzle and 
+the type of symbols used (int or str).
+
+./NumberOrLetterSudokuSolver numbers_puzzle.txt int
+
+or
+
+./NumberOrLetterSudokuSolver letter_puzzle.txt str
+
+The sample puzzle I included with the program is taken from:
+
+http://magictour.free.fr/top95
+
+I solved all the 95 puzzles from the URL above, and they take between 30 milliseconds and 4 minutes.
